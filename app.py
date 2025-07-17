@@ -13,7 +13,8 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'  # <- Replace with your actual sheet ID
 SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
-client_config = st.secrets["client_secret.json"]
+import streamlit as st
+st.write("🔑 Claves en st.secrets:", list(st.secrets.keys()))
 
 # --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
