@@ -6,6 +6,7 @@ from google.auth.transport.requests import Request
 import os
 import pickle
 from datetime import datetime
+import json
 
 # --- Google Sheets Auth Configuration ---
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -23,7 +24,10 @@ def get_gsheet_client():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
+            #flow = InstalledAppFlow.from_client_secrets_file('commands.json', SCOPES)
+            #creds = flow.run_local_server(port=0)
+            client_config = st.secrets["client_secret.json"]
+            flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
             creds = flow.run_local_server(port=0)
 
         with open('token.pickle', 'wb') as token:
