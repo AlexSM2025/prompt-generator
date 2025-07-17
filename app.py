@@ -15,23 +15,17 @@ SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
 # --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
+    from google.oauth2.credentials import Credentials
+
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            #flow = InstalledAppFlow.from_client_secrets_file('commands.json', SCOPES)
-            #creds = flow.run_local_server(port=0)
-            client_config = st.secrets["client_secret.json"]
-            flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
-            creds = flow.run_local_server(port=0)
-
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+    if "google_creds" in st.session_state:
+        creds = Credentials.from_authorized_user_info(st.session_state["google_creds"], SCOPES)
+    else:
+        client_config = st.secrets["client_secret.json"]
+        flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
+        creds = flow.run_local_server(port=0)
+        st.session_state["google_creds"] = json.loads(creds.to_json())
 
     return gspread.authorize(creds)
 
