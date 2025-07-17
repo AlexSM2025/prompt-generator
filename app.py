@@ -25,7 +25,7 @@ def get_gsheet_client():
     if "google_creds" in st.session_state:
         creds = Credentials.from_authorized_user_info(st.session_state["google_creds"], SCOPES)
     else:
-        client_config = st.secrets["client_secret.json"]
+        client_config = st.secrets["client_secret"]
         flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
         creds = flow.run_local_server(port=0)
         st.session_state["google_creds"] = json.loads(creds.to_json())
