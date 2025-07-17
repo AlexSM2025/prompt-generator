@@ -27,7 +27,7 @@ def get_gsheet_client():
     else:
         client_config = st.secrets["client_secret"]
         flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
-        creds = flow.run_console()
+        creds = flow.run_local_server(port=8501, open_browser=False)
         st.session_state["google_creds"] = json.loads(creds.to_json())
 
     return gspread.authorize(creds)
