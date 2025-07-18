@@ -27,10 +27,27 @@ def get_gsheet_client():
     else:
         client_config = st.secrets["client_secret"]
         flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
-        creds = flow.run_local_server(open_browser=False)
-        st.session_state["google_creds"] = json.loads(creds.to_json())
+        flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        
+        auth_url, _ = flow.authorization_url(prompt='consent')
+        st.markdown("### 🔑 Autoriza tu cuenta de Google")
+        st.write("Haz clic en el siguiente enlace, inicia sesión y copia el código de verificación:")
+        st.markdown(f"[Autorizar en Google]({auth_url})")
+        code = st.text_input("Pega aquí el código de autorización")
+        
+        if code:
+            try:
+                flow.fetch_token(code=code)
+                creds = flow.credentials
+                st.session_state["google_creds"] = json.loads(creds.to_json())
+                st.success("✅ Autenticado con éxito.")
+            except Exception as e:
+                st.error(f"Error al autenticar: {e}")
 
-    return gspread.authorize(creds)
+    if creds:
+        return gspread.authorize(creds)
+    else:
+        return None
 
 # --- RESET STATE ---
 if "clear_form" not in st.session_state:
