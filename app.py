@@ -99,12 +99,16 @@ if generate:
     # Save to Google Sheets
     try:
         gc = get_gsheet_client()
-        sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
-        sheet.append_row([
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            usuario, tarea, rol, contexto, resultado, tono, prompt.strip()
-        ])
-        st.success("✅ Prompt saved to Google Sheets.")
+        if gc:
+            sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+            sheet.append_row([
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                usuario, tarea, rol, contexto, resultado, tono, prompt.strip()
+            ])
+            st.success("✅ Prompt saved to Google Sheets.")
+        else:
+            st.warning("🔐 Connect with Google.")
+            
     except Exception as e:
         st.error(f"❌ Error saving prompt: {e}")
 
@@ -114,16 +118,19 @@ st.subheader("📚 Prompt History")
 
 try:
     gc = get_gsheet_client()
-    sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
+    if gc:
+        sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
 
-    filtro = st.text_input("🔍 Search prompt history")
+        filtro = st.text_input("🔍 Search prompt history")
 
-    if filtro:
-        df = df[df.apply(lambda row: filtro.lower() in str(row).lower(), axis=1)]
+        if filtro:
+            df = df[df.apply(lambda row: filtro.lower() in str(row).lower(), axis=1)]
 
-    st.dataframe(df[::-1], use_container_width=True)
+        st.dataframe(df[::-1], use_container_width=True)
+    else:
+        st.info("Connect with Google to see the history.")
 
 except Exception as e:
     st.error(f"Error loading history: {e}")
