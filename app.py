@@ -9,6 +9,8 @@ from datetime import datetime
 import json
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
+from urllib.parse import urlparse
+from urllib.parse import urlencode
 
 # --- Google Sheets Auth Configuration ---
 SCOPES = [
@@ -42,12 +44,10 @@ def get_gsheet_client():
         }
 
         redirect_uri = client_config["web"]["redirect_uris"][0]
-
         flow = Flow.from_client_config(client_config, SCOPES)
         flow.redirect_uri = redirect_uri
 
-        # Obtener parámetros de la URL (después del login)
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
 
         if "code" not in query_params:
             auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
@@ -57,7 +57,7 @@ def get_gsheet_client():
             st.stop()
         else:
             try:
-                flow.fetch_token(authorization_response=st.experimental_get_url())
+                flow.fetch_token(code=query_params["code"][0])
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
                 st.success("✅ Autenticado con éxito")
