@@ -57,7 +57,10 @@ def get_gsheet_client():
             st.stop()
         else:
             try:
-                flow.fetch_token(code=query_params["code"][0])
+                from urllib.parse import urlencode
+                full_redirect_uri = f"{redirect_uri}?{urlencode({'code': query_params['code'][0]})}"
+                flow.fetch_token(authorization_response=full_redirect_uri)
+        
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
                 st.success("✅ Autenticado con éxito")
