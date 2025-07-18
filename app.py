@@ -47,7 +47,6 @@ def get_gsheet_client():
         flow = Flow.from_client_config(client_config, SCOPES)
         flow.redirect_uri = redirect_uri
 
-        # OBTENER TODOS LOS PARÁMETROS DE LA URL
         query_params = st.query_params
 
         if "code" not in query_params:
@@ -57,10 +56,16 @@ def get_gsheet_client():
             st.stop()
         else:
             try:
-                # RECONSTRUIR LA URL COMPLETA INCLUYENDO TODOS LOS PARÁMETROS
+                # DEBUG: Mostrar el query_params completo
+                st.write("🔎 Parámetros de redirección:", query_params)
+
+                # Armar URL de redirección con todos los parámetros
                 from urllib.parse import urlencode
-                full_redirect_uri = f"{redirect_uri}?{urlencode({k: v[0] for k, v in query_params.items()})}"
-                flow.fetch_token(authorization_response=full_redirect_uri)
+                full_url = f"{redirect_uri}?{urlencode({k: v[0] for k, v in query_params.items()})}"
+                st.write("🔗 URL reconstruida para fetch_token:", full_url)
+
+                # Intentar obtener credenciales
+                flow.fetch_token(authorization_response=full_url)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
                 st.success("✅ Autenticado con éxito")
@@ -69,6 +74,7 @@ def get_gsheet_client():
                 st.stop()
 
     return gspread.authorize(creds)
+
 
 
 # --- RESET STATE ---
