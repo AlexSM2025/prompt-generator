@@ -7,6 +7,7 @@ import os
 import pickle
 from datetime import datetime
 import json
+from google_auth_oauthlib.flow import Flow
 
 # --- Google Sheets Auth Configuration ---
 SCOPES = [
