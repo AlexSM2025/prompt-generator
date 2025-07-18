@@ -61,7 +61,7 @@ def get_gsheet_client():
 
                 # Armar URL de redirección con todos los parámetros
                 from urllib.parse import urlencode
-                full_url = f"{redirect_uri}?{urlencode({k: v[0] for k, v in query_params.items()})}"
+                full_url = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
                 st.write("🔗 URL reconstruida para fetch_token:", full_url)
 
                 # Intentar obtener credenciales
