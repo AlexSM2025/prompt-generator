@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from urllib.parse import urlparse
 from urllib.parse import urlencode
+import streamlit.components.v1 as components
 
 # --- Google Sheets Auth Configuration ---
 SCOPES = [
@@ -21,8 +22,8 @@ SCOPES = [
 SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'  # <- Replace with your actual sheet ID
 SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
-import streamlit as st
-st.write("🔑 Claves en st.secrets:", list(st.secrets.keys()))
+#import streamlit as st
+#st.write("🔑 Claves en st.secrets:", list(st.secrets.keys()))
 
 # --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
@@ -51,20 +52,23 @@ def get_gsheet_client():
 
         if "code" not in query_params:
             auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
-            st.markdown("### 🔐 Autoriza tu cuenta de Google")
-            st.markdown(f"[Haz clic aquí para autorizar en Google]({auth_url})")
+
+            # Redirige en la misma pestaña al hacer clic en el botón
+            if st.button("🔐 Autorizar con Google"):
+                st.markdown(f"""
+                    <meta http-equiv="refresh" content="0; url={auth_url}">
+                """, unsafe_allow_html=True)
+                st.stop()
             st.stop()
         else:
             try:
-                # DEBUG: Mostrar el query_params completo
-                st.write("🔎 Parámetros de redirección:", query_params)
+                # DEBUG opcional: muestra parámetros de redirección
+                # st.write("🔎 Parámetros de redirección:", query_params)
 
-                # Armar URL de redirección con todos los parámetros
-                from urllib.parse import urlencode
+                # Armar URL completa para fetch_token
                 full_url = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
-                st.write("🔗 URL reconstruida para fetch_token:", full_url)
 
-                # Intentar obtener credenciales
+                # Obtener credenciales
                 flow.fetch_token(authorization_response=full_url)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
