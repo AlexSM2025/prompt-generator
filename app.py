@@ -9,7 +9,11 @@ from datetime import datetime
 import json
 
 # --- Google Sheets Auth Configuration ---
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
 SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'  # <- Replace with your actual sheet ID
 SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
@@ -18,33 +22,46 @@ st.write("🔑 Claves en st.secrets:", list(st.secrets.keys()))
 
 # --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
-    from google.oauth2.credentials import Credentials
-
     creds = None
 
     if "google_creds" in st.session_state:
         creds = Credentials.from_authorized_user_info(st.session_state["google_creds"], SCOPES)
     else:
-        client_config = st.secrets["client_secret"]
-        flow = InstalledAppFlow.from_client_config({"installed": client_config}, SCOPES)
-        flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
-        
-        auth_url, _ = flow.authorization_url(prompt='consent')
-        st.markdown("### 🔑 Autoriza tu cuenta de Google")
-        st.write("Haz clic en el siguiente enlace, inicia sesión y copia el código de verificación:")
-        st.markdown(f"[Autorizar en Google]({auth_url})")
-        code = st.text_input("Pega aquí el código de autorización")
-        
-        if code:
+        client_config = {
+            "web": {
+                "client_id": st.secrets["client_secret"]["client_id"],
+                "project_id": st.secrets["client_secret"]["project_id"],
+                "auth_uri": st.secrets["client_secret"]["auth_uri"],
+                "token_uri": st.secrets["client_secret"]["token_uri"],
+                "auth_provider_x509_cert_url": st.secrets["client_secret"]["auth_provider_x509_cert_url"],
+                "client_secret": st.secrets["client_secret"]["client_secret"],
+                "redirect_uris": json.loads(st.secrets["client_secret"]["redirect_uris"])
+            }
+        }
+
+        redirect_uri = client_config["web"]["redirect_uris"][0]
+
+        flow = Flow.from_client_config(client_config, SCOPES)
+        flow.redirect_uri = redirect_uri
+
+        # Obtener parámetros de la URL (después del login)
+        query_params = st.experimental_get_query_params()
+
+        if "code" not in query_params:
+            auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
+            st.markdown("### 🔐 Autoriza tu cuenta de Google")
+            st.write("Haz clic para autorizar el acceso a tu Google Sheets:")
+            st.markdown(f"[Autorizar en Google]({auth_url})")
+            st.stop()
+        else:
             try:
-                flow.fetch_token(code=code)
+                flow.fetch_token(authorization_response=st.experimental_get_url())
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
-                st.success("✅")
+                st.success("✅ Autenticado con éxito")
             except Exception as e:
-                st.error(f"Error: {e}")
-        else:
-            return None
+                st.error(f"Error de autenticación: {e}")
+                st.stop()
 
     return gspread.authorize(creds)
 
