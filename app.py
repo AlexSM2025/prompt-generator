@@ -40,14 +40,13 @@ def get_gsheet_client():
                 flow.fetch_token(code=code)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
-                st.success("✅ Autenticado con éxito.")
+                st.success("✅")
             except Exception as e:
-                st.error(f"Error al autenticar: {e}")
+                st.error(f"Error: {e}")
+        else:
+            return None
 
-    if creds:
-        return gspread.authorize(creds)
-    else:
-        return None
+    return gspread.authorize(creds)
 
 # --- RESET STATE ---
 if "clear_form" not in st.session_state:
