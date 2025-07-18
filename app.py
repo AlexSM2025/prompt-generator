@@ -47,20 +47,20 @@ def get_gsheet_client():
         flow = Flow.from_client_config(client_config, SCOPES)
         flow.redirect_uri = redirect_uri
 
+        # OBTENER TODOS LOS PARÁMETROS DE LA URL
         query_params = st.query_params
 
         if "code" not in query_params:
             auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
             st.markdown("### 🔐 Autoriza tu cuenta de Google")
-            st.write("Haz clic para autorizar el acceso a tu Google Sheets:")
-            st.markdown(f"[Autorizar en Google]({auth_url})")
+            st.markdown(f"[Haz clic aquí para autorizar en Google]({auth_url})")
             st.stop()
         else:
             try:
+                # RECONSTRUIR LA URL COMPLETA INCLUYENDO TODOS LOS PARÁMETROS
                 from urllib.parse import urlencode
-                full_redirect_uri = f"{redirect_uri}?{urlencode({'code': query_params['code'][0]})}"
+                full_redirect_uri = f"{redirect_uri}?{urlencode({k: v[0] for k, v in query_params.items()})}"
                 flow.fetch_token(authorization_response=full_redirect_uri)
-        
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
                 st.success("✅ Autenticado con éxito")
@@ -69,6 +69,7 @@ def get_gsheet_client():
                 st.stop()
 
     return gspread.authorize(creds)
+
 
 # --- RESET STATE ---
 if "clear_form" not in st.session_state:
