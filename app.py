@@ -27,6 +27,12 @@ SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
 # --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
+    from google_auth_oauthlib.flow import Flow
+    from google.oauth2.credentials import Credentials
+    import gspread
+    import json
+    from urllib.parse import urlencode
+
     creds = None
 
     if "google_creds" in st.session_state:
@@ -52,24 +58,15 @@ def get_gsheet_client():
 
         if "code" not in query_params:
             auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
-
-            # Redirige en la misma pestaña al hacer clic en el botón
-            if st.button("🔐 Autorizar con Google"):
-                st.markdown(f"""
-                    <meta http-equiv="refresh" content="0; url={auth_url}">
-                """, unsafe_allow_html=True)
-                st.stop()
+            st.markdown("### 🔐 Autoriza tu cuenta de Google")
+            st.write("Haz clic para autorizar el acceso a tu Google Sheets:")
+            st.markdown(f"[Autorizar en Google]({auth_url})")
             st.stop()
         else:
             try:
-                # DEBUG opcional: muestra parámetros de redirección
-                # st.write("🔎 Parámetros de redirección:", query_params)
-
-                # Armar URL completa para fetch_token
-                full_url = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
-
-                # Obtener credenciales
-                flow.fetch_token(authorization_response=full_url)
+                # Usar urlencode con doseq=True para codificar correctamente los parámetros
+                full_redirect_uri = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
+                flow.fetch_token(authorization_response=full_redirect_uri)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
                 st.success("✅ Autenticado con éxito")
