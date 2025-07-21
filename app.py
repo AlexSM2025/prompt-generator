@@ -143,7 +143,9 @@ if generate:
             st.warning("🔐 Connect with Google.")
             
     except Exception as e:
-        st.error(f"❌ Error saving prompt: {e}")
+        import traceback
+        st.error("❌ Error saving prompt:")
+        st.code(traceback.format_exc())
 
 # --- PROMPT HISTORY ---
 st.markdown("---")
