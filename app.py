@@ -47,13 +47,14 @@ def get_gsheet_client():
             st.info("You will be redirected to a new tab to authorize access. After authorizing, **return to this tab to continue.**")
             st.markdown(f"[👉 Authorize on Google]({auth_url})")
             st.stop()
-        else:
+
+        elif "code" in query_params and "google_creds" not in st.session_state:
             try:
                 full_redirect_uri = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
                 flow.fetch_token(authorization_response=full_redirect_uri)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
-                st.success("✅ Authentication successful! You can now use the generator.")
+                st.experimental_rerun()  # 🔁 Critical to load the UI after authentication
             except Exception as e:
                 st.error(f"❌ Authentication error: {e}")
                 st.stop()
