@@ -1,23 +1,38 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import os
+import pickle
 from datetime import datetime
 import json
+from google_auth_oauthlib.flow import Flow
+from google.oauth2.credentials import Credentials
+from urllib.parse import urlparse
 from urllib.parse import urlencode
+import streamlit.components.v1 as components
 
-# --- GOOGLE SHEETS CONFIGURATION ---
+# --- Google Sheets Auth Configuration ---
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
-SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'
-SHEET_NAME = 'Sheet1'
+SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'  # <- Replace with your actual sheet ID
+SHEET_NAME = 'Sheet1'  # Or the name of your tab
 
-# --- AUTHENTICATION FUNCTION ---
+#import streamlit as st
+#st.write("🔑 Claves en st.secrets:", list(st.secrets.keys()))
+
+# --- GOOGLE SHEETS AUTHENTICATION ---
 def get_gsheet_client():
+    from google_auth_oauthlib.flow import Flow
+    from google.oauth2.credentials import Credentials
+    import gspread
+    import json
+    from urllib.parse import urlencode
+
     creds = None
 
     if "google_creds" in st.session_state:
@@ -43,53 +58,47 @@ def get_gsheet_client():
 
         if "code" not in query_params:
             auth_url, _ = flow.authorization_url(prompt='consent', include_granted_scopes='true')
-            st.markdown("### 🔐 Authorize your Google account")
-            st.info("You will be redirected to a new tab to authorize access. After authorizing, **return to this tab to continue.**")
-            st.markdown(f"[👉 Authorize on Google]({auth_url})")
+            st.markdown("### 🔐 Autoriza tu cuenta de Google")
+            st.write("Haz clic para autorizar el acceso a tu Google Sheets:")
+            st.markdown(f"[Autorizar en Google]({auth_url})")
             st.stop()
-
-        elif "code" in query_params and "google_creds" not in st.session_state:
+        else:
             try:
+                # Usar urlencode con doseq=True para codificar correctamente los parámetros
                 full_redirect_uri = f"{redirect_uri}?{urlencode(query_params, doseq=True)}"
                 flow.fetch_token(authorization_response=full_redirect_uri)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
-                st.experimental_rerun()  # 🔁 Critical to load the UI after authentication
+                st.success("✅ Autenticado con éxito")
             except Exception as e:
-                st.error(f"❌ Authentication error: {e}")
+                st.error(f"Error de autenticación: {e}")
                 st.stop()
 
     return gspread.authorize(creds)
 
 
-# --- STREAMLIT CONFIG ---
-st.set_page_config(page_title="Prompt Generator", layout="centered")
-st.title("🤖 Smart Prompt Generator")
 
-# --- FORCE AUTHENTICATION ---
-if "google_creds" not in st.session_state:
-    st.warning("🔐 Please authenticate with Google to continue.")
-    get_gsheet_client()
-    st.stop()
-
-# --- FORM STATE RESET ---
+# --- RESET STATE ---
 if "clear_form" not in st.session_state:
     st.session_state.clear_form = False
 
 if st.session_state.clear_form:
     st.session_state.clear_form = False
-    for key in ["user", "task", "role", "context", "outcome", "tone"]:
-        st.session_state[key] = "" if key != "tone" else "Professional"
+    for key in ["usuario", "tarea", "rol", "contexto", "resultado", "tono"]:
+        st.session_state[key] = "" if key != "tono" else "Professional"
 
-# --- PROMPT FORM ---
-st.write("Fill out the form to generate a custom prompt:")
+# --- STREAMLIT UI CONFIGURATION ---
+st.set_page_config(page_title="Prompt Generator", layout="centered")
+st.title("🤖 Smart Prompt Generator")
+st.write("Fill out the form to generate a personalized prompt.")
 
-user = st.text_input("🧑 Your name or email", key="user")
-role = st.text_input("👤 What role should ChatGPT assume?", key="role", placeholder="e.g. Marketing analyst, Software engineer")
-task = st.text_input("🎯 What should ChatGPT do?", key="task", placeholder="e.g. Write an email, Summarize a report")
-context = st.text_area("📋 What information should it consider?", key="context")
-outcome = st.text_input("📦 What result do you expect?", key="outcome", placeholder="e.g. A summary, A 150-word post")
-tone = st.selectbox("🎨 Preferred tone?", ["Professional", "Casual", "Creative", "Technical", "Neutral"], key="tone")
+# --- FORM FIELDS ---
+usuario = st.text_input("🧑 Your name or email", key="usuario")
+rol = st.text_input("👤 What role should ChatGPT assume?", key="rol", placeholder="e.g. Marketing analyst, Software engineer, Project manager")
+tarea = st.text_input("🎯 What do you want ChatGPT to do?", key="tarea", placeholder="e.g. Write a cold email, Summarize a report, Draft social media post")
+contexto = st.text_area("📋 What information should it consider?", key="contexto")
+resultado = st.text_input("📦 What result do you expect?", key="resultado", placeholder="e.g. A 3-paragraph summary, A 150-word LinkedIn post, A table with pros and cons")
+tono = st.selectbox("🎨 What tone do you prefer?", ["Professional", "Casual", "Creative", "Technical", "Neutral"], key="tono")
 
 # --- ACTION BUTTONS ---
 generate = False
@@ -99,16 +108,16 @@ col1, col2 = st.columns(2)
 
 with col1:
     if st.button("🚀 Generate Prompt"):
-        if not (user and task and role and context and outcome):
-            st.warning("⚠️ Please complete all fields before generating.")
+        if not (usuario and tarea and rol and contexto and resultado):
+            st.warning("Please complete all fields.")
         else:
             generate = True
-            prompt = f"""Act as a {role.lower()}. Your task is to {task.lower()}.
-Consider the following: {context.strip()}
-The expected result is: {outcome.lower()}. Use a {tone.lower()} tone."""
+            prompt = f"""Act as a {rol.lower()}. Your task is to {tarea.lower()}.
+Consider the following: {contexto.strip()}
+The expected result is: {resultado.lower()}. Use a {tono.lower()} tone."""
 
 with col2:
-    if st.button("🧹 Clear Form"):
+    if st.button("🧹 Clear All"):
         st.session_state.clear_form = True
         st.rerun()
 
@@ -117,15 +126,19 @@ if generate:
     st.markdown("### 📝 Generated Prompt:")
     st.code(prompt.strip(), language="markdown")
 
-    # --- SAVE TO GOOGLE SHEETS ---
+    # Save to Google Sheets
     try:
         gc = get_gsheet_client()
-        sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
-        sheet.append_row([
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            user, task, role, context, outcome, tone, prompt.strip()
-        ])
-        st.success("✅ Prompt saved to Google Sheets.")
+        if gc:
+            sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+            sheet.append_row([
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                usuario, tarea, rol, contexto, resultado, tono, prompt.strip()
+            ])
+            st.success("✅ Prompt saved to Google Sheets.")
+        else:
+            st.warning("🔐 Connect with Google.")
+            
     except Exception as e:
         import traceback
         st.error("❌ Error saving prompt:")
@@ -137,15 +150,19 @@ st.subheader("📚 Prompt History")
 
 try:
     gc = get_gsheet_client()
-    sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
+    if gc:
+        sheet = gc.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
 
-    search = st.text_input("🔍 Search in history")
+        filtro = st.text_input("🔍 Search prompt history")
 
-    if search:
-        df = df[df.apply(lambda row: search.lower() in str(row).lower(), axis=1)]
+        if filtro:
+            df = df[df.apply(lambda row: filtro.lower() in str(row).lower(), axis=1)]
 
-    st.dataframe(df[::-1], use_container_width=True)
+        st.dataframe(df[::-1], use_container_width=True)
+    else:
+        st.info("Connect with Google to see the history.")
+
 except Exception as e:
-    st.error(f"❌ Error loading history: {e}")
+    st.error(f"Error loading history: {e}")
