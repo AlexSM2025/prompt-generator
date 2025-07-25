@@ -136,8 +136,8 @@ with col1:
         else:
             generate = True
             raw_prompt = f"""Act as a {role.lower()}. Your task is to {task.lower()}.
-            Consider the following: {context.strip()}
-            The expected result is: {outcome.lower()}. Use a {tone.lower()} tone."""
+Consider the following: {context.strip()}
+The expected result is: {outcome.lower()}. Use a {tone.lower()} tone."""
             
             prompt = translate_to_english(raw_prompt)
 
