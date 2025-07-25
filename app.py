@@ -85,9 +85,26 @@ if st.session_state.clear_form:
 
 # --- PROMPT FORM ---
 st.write("Fill out the form to generate a custom prompt:")
+default_roles = [
+    "Marketing Analyst",
+    "Software Engineer",
+    "Customer Support Agent",
+    "Sales Representative",
+    "Data Scientist",
+    "Content Writer",
+    "Product Manager",
+    "Other (specify below)"
+]
+
 
 user = st.text_input("🧑 Your name or email", key="user")
-role = st.text_input("👤 What role should ChatGPT assume?", key="role", placeholder="e.g. Marketing analyst, Software engineer")
+selected_role = st.selectbox("👤 What role should ChatGPT assume?", default_roles, key="selected_role")
+
+if selected_role == "Other (specify below)":
+    role = st.text_input("✏️ Enter custom role", key="role_custom")
+else:
+    role = selected_role
+    
 task = st.text_input("🎯 What should ChatGPT do?", key="task", placeholder="e.g. Write an email, Summarize a report")
 context = st.text_area("📋 What information should it consider?", key="context")
 outcome = st.text_input("📦 What result do you expect?", key="outcome", placeholder="e.g. A summary, A 150-word post")
