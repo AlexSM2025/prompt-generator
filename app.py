@@ -6,6 +6,7 @@ from google.oauth2.credentials import Credentials
 from datetime import datetime
 import json
 from urllib.parse import urlencode
+from deep_translator import GoogleTranslator
 
 # --- GOOGLE SHEETS CONFIGURATION ---
 SCOPES = [
@@ -15,6 +16,18 @@ SCOPES = [
 
 SHEET_ID = '1C55hWzwDbiOt7vC8jvM2-YIKc6WHIorbIV6UaWgIg8Y'
 SHEET_NAME = 'Sheet1'
+
+#------TRANSLATE FUNCTION------
+
+def translate_to_english(text):
+    try:
+        # Intenta traducir el texto al inglés si no está en inglés
+        translated = GoogleTranslator(source='auto', target='en').translate(text)
+        return translated
+    except Exception as e:
+        st.error(f"Translation failed: {e}")
+        return text
+
 
 # --- AUTHENTICATION FUNCTION ---
 def get_gsheet_client():
@@ -122,9 +135,11 @@ with col1:
             st.warning("⚠️ Please complete all fields before generating.")
         else:
             generate = True
-            prompt = f"""Act as a {role.lower()}. Your task is to {task.lower()}.
-Consider the following: {context.strip()}
-The expected result is: {outcome.lower()}. Use a {tone.lower()} tone."""
+            raw_prompt = f"""Act as a {role.lower()}. Your task is to {task.lower()}.
+            Consider the following: {context.strip()}
+            The expected result is: {outcome.lower()}. Use a {tone.lower()} tone."""
+            
+            prompt = translate_to_english(raw_prompt)
 
 with col2:
     if st.button("🧹 Clear Form"):
