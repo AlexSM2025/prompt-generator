@@ -54,7 +54,9 @@ def get_gsheet_client():
                 flow.fetch_token(authorization_response=full_redirect_uri)
                 creds = flow.credentials
                 st.session_state["google_creds"] = json.loads(creds.to_json())
-                st.experimental_rerun()  # 🔁 Critical to load the UI after authentication
+                st.success("✅ Authentication successful! You can now use the generator.")
+                st.rerun()
+
             except Exception as e:
                 st.error(f"❌ Authentication error: {e}")
                 st.stop()
